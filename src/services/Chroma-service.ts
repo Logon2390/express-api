@@ -53,8 +53,23 @@ export class ChromaService implements IChromaService {
         resultId: firstResult.id,
         textLength: firstResult.text.length
       });
-      
-      return firstResult.text;
+
+      // Aquí llamamos a la API de Ollama usando el contexto de Chroma
+    const ollamaPrompt = `Contexto:\n${firstResult.text}\n\nPregunta:\n${question}`;
+    const ollamaResponse = await axios.post(
+      process.env.API_OLLAMA || 'https://host.docker.internal:11434/api/generate',
+      {
+        model: process.env.OLLAMA_MODEL || 'gemma3',
+        prompt: ollamaPrompt,
+        stream: false
+      }
+    );
+
+    if (!ollamaResponse.data || !ollamaResponse.data.response) {
+      throw new AppError('No response from Ollama', 500);
+    }
+    console.log('Ollama response:', ollamaResponse.data.response);
+    return ollamaResponse.data.response;
       
     } catch (error) {
       this.logger.error('Error calling Chroma API:', error);
