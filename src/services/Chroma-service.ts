@@ -68,7 +68,7 @@ export class ChromaService implements IChromaService {
     if (!ollamaResponse.data || !ollamaResponse.data.response) {
       throw new AppError('No response from Ollama', 500);
     }
-    console.log('Ollama response:', ollamaResponse.data.response);
+    this.logger.error('Ollama response:', ollamaResponse.data.response);
     return ollamaResponse.data.response;
       
     } catch (error) {
