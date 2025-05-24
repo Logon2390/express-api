@@ -24,7 +24,7 @@ export class ChromaService implements IChromaService {
   public async askQuestion(question: string): Promise<string> {
     try {
       this.logger.info('Sending question to Chroma API', { question });
-      
+
       const response = await this.httpClient.get<ChromaApiResponse>('/search', {
         params: {
           query: question.trim(),
@@ -32,9 +32,9 @@ export class ChromaService implements IChromaService {
         },
       });
 
-      this.logger.info('Chroma API response', { 
+      this.logger.info('Chroma API response', {
         responseLength: response.data?.length || 0,
-        firstResult: response.data?.[0]?.id || 'none' 
+        firstResult: response.data?.[0]?.id || 'none'
       });
 
       // Check if we have results
@@ -44,7 +44,7 @@ export class ChromaService implements IChromaService {
 
       // Get the first (most relevant) result
       const firstResult = response.data[0];
-      
+
       if (!firstResult.text || !firstResult.text.trim()) {
         throw new AppError('Found result but no text content available', 400);
       }
@@ -55,50 +55,59 @@ export class ChromaService implements IChromaService {
       });
 
       // Aquí llamamos a la API de Ollama usando el contexto de Chroma
-    const ollamaPrompt = `Contexto:\n${firstResult.text}\n\nPregunta:\n${question}`;
-    const ollamaResponse = await axios.post(
-      process.env.API_OLLAMA || 'https://host.docker.internal:11434/api/generate',
-      {
-        model: process.env.OLLAMA_MODEL || 'gemma3',
-        prompt: ollamaPrompt,
-        stream: false
-      }
-    );
-
-    if (!ollamaResponse.data || !ollamaResponse.data.response) {
-      throw new AppError('No response from Ollama', 500);
-    }
-    this.logger.error('Ollama response:', ollamaResponse.data.response);
-    return ollamaResponse.data.response;
+      const ollamaPrompt = `
+      Actúa como un asistente experto en el tema. Utiliza la información proporcionada en el contexto para responder la pregunta del usuario de forma clara y precisa. Si la respuesta no puede derivarse del contexto, responde "No tengo suficiente información".
       
+      Contexto:
+      ${firstResult.text}
+      
+      Pregunta:
+      ${question}
+      `;
+
+      const ollamaResponse = await axios.post(
+        process.env.API_OLLAMA || 'https://localhost:11434/api/generate',
+        {
+          model: process.env.OLLAMA_MODEL || 'gemma3',
+          prompt: ollamaPrompt,
+          stream: false
+        }
+      );
+
+      if (!ollamaResponse.data || !ollamaResponse.data.response) {
+        throw new AppError('No response from Ollama', 500);
+      }
+      this.logger.error('Ollama response:', ollamaResponse.data.response);
+      return ollamaResponse.data.response;
+
     } catch (error) {
       this.logger.error('Error calling Chroma API:', error);
-      
+
       if (error instanceof AppError) {
         throw error;
       }
-      
+
       if (axios.isAxiosError(error)) {
         if (error.code === 'ECONNABORTED') {
           throw new AppError('Chroma API request timeout', 408);
         }
-        
+
         if (error.response?.status === 404) {
           throw new AppError('No matching documents found in the knowledge base', 404);
         }
-        
+
         if (error.response?.status) {
           throw new AppError(
             `Chroma API error: ${error.response.statusText}`,
             error.response.status
           );
         }
-        
+
         if (error.request) {
           throw new AppError('Unable to reach Chroma API', 503);
         }
       }
-      
+
       throw new AppError('Unexpected error occurred while calling Chroma API', 500);
     }
   }
