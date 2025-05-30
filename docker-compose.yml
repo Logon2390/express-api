@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  apichroma:
+    build: ../chroma-api
+    container_name: apichroma
+    ports:
+      - "8000:8000"
+    networks:
+      - red-api
+
+  dbchroma:
+    build: ../BdChroma
+    container_name: dbchroma
+    ports:
+      - "9000:9000"
+    networks:
+      - red-api
+
+  apieesxpress:
+    build: .
+    container_name: apieesxpress
+    ports:
+      - "3000:3000"
+    networks:
+      - red-api
+    depends_on:
+      - dbchroma
+      - apichroma
+    environment:
+      - CHROMA_API_URL=http://dbchroma:9000/api/v1
+      - PORT=3000
+      - NODE_ENV=production
+
+networks:
+  red-api:
