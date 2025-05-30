@@ -12,6 +12,11 @@ export interface ChromaApiConfig {
   timeout: number;
 }
 
+export interface OllamaApiConfig {
+  url: string;
+  model: string;
+}
+
 export interface ServerConfig {
   port: number;
   nodeEnv: string;
@@ -21,6 +26,7 @@ export interface ServerConfig {
 export interface AppConfig {
   discord: DiscordConfig;
   chromaApi: ChromaApiConfig;
+  ollamaApi: OllamaApiConfig;
   server: ServerConfig;
 }
 
@@ -54,6 +60,10 @@ class ConfigService {
         url: process.env.CHROMA_API_URL || 'http://localhost:9000/api/v1/',
         timeout: parseInt(process.env.CHROMA_API_TIMEOUT || '30000', 10),
       },
+      ollamaApi: {
+        url: process.env.OLLAMA_API_URL || 'http://localhost:11434/api/generate',
+        model: process.env.OLLAMA_MODEL || 'gemma3',
+      },
       server: {
         port: parseInt(process.env.PORT || '3000', 10),
         nodeEnv: process.env.NODE_ENV || 'development',
@@ -63,7 +73,7 @@ class ConfigService {
   }
 
   private validateConfig(): void {
-    const { discord, chromaApi, server } = this.config;
+    const { discord, chromaApi, server, ollamaApi } = this.config;
 
     if (!discord.token) {
       throw new Error('DISCORD_TOKEN is required');
@@ -79,6 +89,14 @@ class ConfigService {
 
     if (isNaN(server.port) || server.port <= 0) {
       throw new Error('PORT must be a valid positive number');
+    }
+
+    if (!ollamaApi.url) {
+      throw new Error('OLLAMA_API_URL is required');
+    }
+
+    if (!ollamaApi.model) {
+      throw new Error('OLLAMA_MODEL is required');
     }
   }
 }
