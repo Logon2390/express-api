@@ -197,3 +197,7 @@ Para agregar nuevos comandos:
 1. Crear comando en `src/bot/commands.ts`
 2. Implementar la interfaz `Command`
 3. Agregar al array en `createCommands()`
+
+## Comando para instalar nodemon
+npm install --save-dev nodemon
+

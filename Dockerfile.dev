@@ -1,0 +1,21 @@
+# ----------------------------------------------------
+# Dockerfile.dev (solo para desarrollo con ts-node-dev)
+# ----------------------------------------------------
+FROM node:18-alpine
+
+WORKDIR /app
+
+# Copiamos package.json y package-lock.json
+COPY package*.json ./
+
+# Instalamos TODAS las dependencias (prod + dev)
+RUN npm install
+
+# Copiamos el resto del código
+COPY . .
+
+# Exponemos el puerto 3000
+EXPOSE 3000
+
+# Comando por defecto: corre ts-node-dev (hot-reload)
+CMD ["npm", "run", "dev"]
